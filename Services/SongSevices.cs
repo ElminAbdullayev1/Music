@@ -9,35 +9,42 @@ using Music.Models;
 
 namespace Music.Services
 {
-    public class SongService : ISong
+       public class SongService
     {
-        private readonly List<Song> _songs = new();
-        private int _idCounter = 1;
-
+        private static List<Song> Songs { get; } = new List<Song>();
         public void Create(Song song)
         {
-            song.Id = _idCounter++;
-            _songs.Add(song);
+            if (song is null)
+            {
+                throw new NotFoundException("Mahni tapilmadi");
+            }
+            song.Id = Songs.Count + 1;
+            Songs.Add(song);
+            Console.WriteLine("Mahni elave edildi");
         }
-
-        public List<Song> GetAll() => _songs;
-
-        public Song GetById(int id) =>
-            _songs.FirstOrDefault(s => s.Id == id) ?? throw new NotFoundException("Song tapilmadi");
-
-        public void Update(Song song)
+        public List<Song> GetAll()
         {
-            var existing = GetById(song.Id);
-            existing.SongName = song.SongName;
-            existing.ArtistNames = song.ArtistNames;
-            existing.Genre = song.Genre;
-            existing.Duration = song.Duration;
+            if (Songs.Count == 0)
+            {
+                throw new NotFoundException("Mahni tapilmadi");
+            }
+            return Songs;
         }
-
         public void Delete(int id)
         {
-            var song = GetById(id);
-            _songs.Remove(song);
+            var song = Songs.FirstOrDefault(s => s.Id == id);
+            if (song != null)
+            {
+                Songs.Remove(song);
+                Console.WriteLine("Mahni silindi");
+                return;
+            }
+            throw new NotFoundException("Mahni tapilmadi");
+        }
+
+        internal object GetById(int sid)
+        {
+            throw new NotImplementedException();
         }
     }
 }
