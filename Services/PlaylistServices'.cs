@@ -10,71 +10,133 @@ using static Music.Enum.EnumGenre;
 
 namespace Music.Services
 {
-    public class PlaylistService : IPlaylist
+       public class PlaylistService
     {
-        private List<Playlist> _playlists = new();
-        private int _idCounter = 1;
-
+        private static List<Playlist> Playlists { get; } = [];
         public void Create(Playlist playlist)
         {
-            playlist.Id = _idCounter++;
-            _playlists.Add(playlist);
+            if(playlist is null)
+            {
+                throw new NotFoundException("Playlist tapilmadi");
+            }
+            playlist.Id = Playlists.Count + 1;
+            Playlists.Add(playlist);
+            Console.WriteLine("Playlist elave edildi");
         }
-
-        public List<Playlist> GetAll()
+        public void AddSong(int playlistId, Song song)
         {
-            return _playlists;
+            if(song is null)
+            {
+                throw new NotFoundException("Mahni tapilmadi");
+            }
+            foreach(var playlist in Playlists)
+            {
+                if (playlist.Id == playlistId)
+                {
+                    playlist.Songs.Add(song);
+                    Console.WriteLine("Mahni elave edildi");
+                    return;
+                }
+            }
+            throw new NotFoundException("Playlist tapilmadi");
         }
-
-        public Playlist GetById(int id)
+        public List<Playlist> GetAllPlaylists()
         {
-            var playlist = _playlists.FirstOrDefault(p => p.Id == id);
-            if (playlist == null)
-                throw new NotFoundException("Playlist tapılmadı");
-            return playlist;
+            if (Playlists.Count == 0)
+            {
+                throw new NotFoundException("Playlist tapilmadi");
+            }
+            return Playlists;
         }
-
+        public void DeleteSong(int playlistId, int songId)
+        {
+            foreach (var playlist in Playlists)
+            {
+                if (playlist.Id == playlistId)
+                {
+                    var song = playlist.Songs.FirstOrDefault(s => s.Id == songId);
+                    if (song != null)
+                    {
+                        playlist.Songs.Remove(song);
+                        Console.WriteLine("Mahni silindi");
+                        return;
+                    }
+                }
+            }
+            throw new NotFoundException("Mahni tapilmadi");
+        }
+        public void DeletePlaylist(int playlistId)
+        {
+            foreach (var playlist in Playlists)
+            {
+                if (playlist.Id == playlistId)
+                {
+                    Playlists.Remove(playlist);
+                    Console.WriteLine("Playlist silindi");
+                    return;
+                }
+            }
+            throw new NotFoundException("Playlist tapilmadi");
+        }
+        public List<Playlist> GetPlaylists()
+        {
+            if (Playlists.Count == 0)
+            {
+                throw new NotFoundException("Playlist tapilmadi");
+            }
+            return Playlists;
+        }
+        public Playlist GetPlaylistById(int id)
+        {
+            foreach (var playlist in Playlists)
+            {
+                if (playlist.Id == id)
+                {
+                    return playlist;
+                }
+            }
+            throw new NotFoundException("Playlist tapilmadi");
+        }
         public void Update(Playlist playlist)
         {
-            var existing = GetById(playlist.Id);
-            existing.PlaylistName = playlist.PlaylistName;
-            existing.Songs = playlist.Songs;
+            foreach (var p in Playlists)
+            {
+                if (p.Id == playlist.Id)
+                {
+                    p.PlaylistName = playlist.PlaylistName;
+                    Console.WriteLine("Playlist yenilendi");
+                    return;
+                }
+            }
+            throw new NotFoundException("Playlist tapilmadi");
         }
-
-        public void Delete(int id)
-        {
-            var playlist = GetById(id);
-            _playlists.Remove(playlist);
-        }
-
-        // Filter sadə dildə yazılıb
         public List<Song> FilterSongs(int playlistId, string? artist = null, string? songName = null, string? genre = null)
         {
-            var playlist = GetById(playlistId);
-            var result = playlist.Songs;
-
+            var playlist = GetPlaylistById(playlistId);
+            var filteredSongs = playlist.Songs.AsQueryable();
             if (!string.IsNullOrEmpty(artist))
             {
-                result = result
-                    .Where(s => s.ArtistNames.Any(a => a.ToLower().Contains(artist.ToLower())))
-                    .ToList();
+                filteredSongs = filteredSongs.Where(s => s.ArtistNames.Contains(artist));
             }
-
             if (!string.IsNullOrEmpty(songName))
             {
-                result = result
-                    .Where(s => s.SongName.ToLower().Contains(songName.ToLower()))
-                    .ToList();
+                filteredSongs = filteredSongs.Where(s => s.SongName.Contains(songName));
             }
-
             if (!string.IsNullOrEmpty(genre))
             {
-                result = result
-                    .Where(s => s.Genre.ToString().ToLower() == genre.ToLower())
-                    .ToList();
+                filteredSongs = filteredSongs.Where(s => s.Genre.ToString().Equals(genre, StringComparison.OrdinalIgnoreCase));
             }
+            return filteredSongs.ToList();
+        }
 
-            return result;
+        internal object GetById(int pid)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal IEnumerable<object> GetAll()
+        {
+            throw new NotImplementedException();
         }
     }
 }
